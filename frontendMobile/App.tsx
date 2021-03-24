@@ -1,6 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Navbar from "./components/Navbar";
 import Personnels from "./screens/PersonnelsScreen"
 
@@ -11,6 +11,7 @@ export default function App() {
       <View style={styles.screen}>
         <Personnels/>
       </View>
+
       <StatusBar style="auto" />
     </View>
   );
