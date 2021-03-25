@@ -1,11 +1,14 @@
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import { StyleSheet, View } from "react-native";
+import { Provider } from "react-redux";
 import Navbar from "./components/Navbar";
 import Personnels from "./screens/PersonnelsScreen"
+import store from './store'
 
 export default function App() {
   return (
+    <Provider store={store}>
     <View style={styles.container}>
       <Navbar />
       <View style={styles.screen}>
@@ -14,6 +17,7 @@ export default function App() {
 
       <StatusBar style="auto" />
     </View>
+    </Provider>
   );
 }
 

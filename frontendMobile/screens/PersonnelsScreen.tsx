@@ -1,41 +1,114 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TextInput, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import { MaterialCommunityIcons, AntDesign } from "@expo/vector-icons";
 import PersonnelBox from "../components/PersonnelBox";
+import { useDispatch, useSelector, RootStateOrAny } from "react-redux";
 import Axios from "axios";
 
 export default () => {
-  const [personnels, setPersonnels] = useState<any[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [personnelsPerPage, setPersonnelsPerPage] = useState(4);
+  const state = useSelector((state: RootStateOrAny) => state);
+  const dispatch = useDispatch();
+  const [apapun, setapa] = useState('')
   useEffect(() => {
-    const fetchPersonnels = async () => {
-      try {
-        const { data } = await Axios.get(
-          "https://randomuser.me/api/?results=28"
-        );
-        setPersonnels(data.results);
-      } catch (err) {
-        console.log(err);
-      }
+    const fetchPersonnels = () => {
+      Axios.get("https://randomuser.me/api/?results=28")
+        .then(({ data }) => {
+          dispatch({
+            type: "SET_PERSONNELS",
+            payload: data.results,
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     };
     fetchPersonnels();
   }, []);
-  const lasPage = Math.ceil(personnels.length / personnelsPerPage);
-  const indexOfLastPersonnel = currentPage * personnelsPerPage;
-  const indexOfFirstPersonnel = indexOfLastPersonnel - personnelsPerPage;
-  const currentPersonnels = personnels.slice(
+
+  const lasPage = Math.ceil(
+    state.Personnels.Personnels.length / state.Personnels.PersonnelsPerPage
+  );
+  const indexOfLastPersonnel =
+    state.Page.CurrentPage * state.Personnels.PersonnelsPerPage;
+  const indexOfFirstPersonnel =
+    indexOfLastPersonnel - state.Personnels.PersonnelsPerPage;
+  const currentPersonnels = state.Personnels.Personnels.slice(
     indexOfFirstPersonnel,
     indexOfLastPersonnel
   );
-
+  const goingDown = () => {
+    if (state.Page.CurrentPage === 2) {
+      dispatch({
+        type: "SET_CURRENT_PAGE",
+        payload: state.Page.CurrentPage - 1,
+      });
+      dispatch({
+        type: "SET_PREVIOUS_PAGE",
+        payload: true,
+      });
+    } else {
+      dispatch({
+        type: "SET_NEXT_PAGE",
+        payload: false,
+      });
+      dispatch({
+        type: "SET_CURRENT_PAGE",
+        payload: state.Page.CurrentPage - 1,
+      });
+    }
+  };
+  const goingUp = () => {
+    if (state.Page.CurrentPage === lasPage - 1) {
+      dispatch({
+        type: "SET_CURRENT_PAGE",
+        payload: state.Page.CurrentPage + 1,
+      });
+      dispatch({
+        type: "SET_NEXT_PAGE",
+        payload: true,
+      });
+    } else {
+      dispatch({
+        type: "SET_PREVIOUS_PAGE",
+        payload: false,
+      });
+      dispatch({
+        type: "SET_CURRENT_PAGE",
+        payload: state.Page.CurrentPage + 1,
+      });
+    }
+  };
+  const inputPersonnel = (value:any)=> {
+    dispatch({
+      type: "SET_SEARCH_PERSONNEL",
+      payload: value,
+    });
+  }
+  const findPersonnel = ()=> {
+    let result = state.Personnels.Personnels.filter((el:any)=>{
+      return (el.name.first.toLowerCase() === state.Personnels.SearchPersonnel.toLowerCase())
+    })
+    console.log(result)
+    dispatch({
+      type: "SET_FIND_PERSONNEL",
+      payload: result
+    })
+  }
+ 
   return (
     <View style={styles.screen}>
       <View style={styles.personnelsScreen}>
         <View style={styles.center}>
           <Text style={styles.textTitle}>PERSONNELS LIST</Text>
           <Text style={styles.textSubTitle}>List of all personnels</Text>
-          <TextInput style={styles.searchPersonnelsForm}></TextInput>
+          <TextInput style={styles.searchPersonnelsForm} onChangeText={(value)=> inputPersonnel(value)} onSubmitEditing={()=> findPersonnel()}></TextInput>
           <View style={styles.addPersonnelButton}>
             <Text style={styles.addPersonnel}>Add Personnel </Text>
             <Text style={styles.icon}>
@@ -48,23 +121,51 @@ export default () => {
           </View>
         </View>
       </View>
-      <ScrollView style={{marginBottom: 20}}>
+      <ScrollView style={{ marginBottom: 20 }}>
         {currentPersonnels.map((personnel: any) => (
-            <PersonnelBox key={personnel.login.uuid} personnel={personnel} />
-            ))}
+          <PersonnelBox key={personnel.login.uuid} personnel={personnel} />
+        ))}
       </ScrollView>
       <View style={styles.buttonPage}>
-      <AntDesign name="left" size={24} color="black" />
-      <Text>Previous</Text>
-      <Text>Next</Text>
-      <AntDesign name="right" size={24} color="black" />
+        <TouchableOpacity
+          style={styles.button}
+          disabled={state.Page.PreviousPage}
+          onPress={goingDown}
+        >
+          <Text
+            style={
+              state.Page.PreviousPage
+                ? { color: "gray" }
+                : { color: "black" }
+            }
+          >
+            <AntDesign name="left" size={19} />
+            <Text style={{ marginTop: 1 }}>Previous</Text>
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.button}
+          disabled={state.Page.NextPage}
+          onPress={goingUp}
+        >
+          <Text
+            style={
+              state.Page.NextPage
+                ? { color: "gray" }
+                : { color: "black" }
+            }
+          >
+            <Text style={{ marginTop: 1 }}>Next</Text>
+            <AntDesign name="right" size={19} />
+          </Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 };
 const styles = StyleSheet.create({
   screen: {
-    height:670
+    height: 670,
   },
   personnelsScreen: {
     margin: 15,
@@ -111,9 +212,12 @@ const styles = StyleSheet.create({
   },
   buttonPage: {
     marginBottom: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     width: 350,
-    paddingHorizontal:20
-  }
+    paddingHorizontal: 20,
+  },
+  button: {
+    flexDirection: "row",
+  },
 });
